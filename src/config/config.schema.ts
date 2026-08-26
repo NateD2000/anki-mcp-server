@@ -18,6 +18,18 @@ export const DEFAULT_ALLOWED_ORIGINS = [
 ];
 
 /**
+ * Treats a blank/whitespace-only string as "not set" so it falls through to
+ * the schema default instead of failing coercion (PORT="", ANKI_CONNECT_TIMEOUT="",
+ * ANKI_CONNECT_API_VERSION="") or failing `.url()` validation
+ * (ANKI_CONNECT_URL="", TUNNEL_SERVER_URL="") or binding an unintended value
+ * (HOST=""). Non-string values pass through unchanged.
+ */
+function emptyStringToUndefined(val: unknown): unknown {
+  if (typeof val === "string" && val.trim() === "") return undefined;
+  return val;
+}
+
+/**
  * Splits a comma-separated env string into a trimmed, non-empty list.
  * Returns the schema default ([]) when the value is absent or blank.
  */
@@ -34,8 +46,16 @@ function parseCsvList(val: unknown): string[] | undefined {
 
 export const configSchema = z.object({
   // Server
-  port: z.coerce.number().int().positive().default(3000),
-  host: z.string().default("127.0.0.1"),
+  // `.default()` must sit on the *inner* schema, not chained after
+  // `.preprocess()` — Zod 4 only re-applies `.default()` when the value
+  // reaching it is `undefined` before preprocessing runs, so chaining it
+  // outside would leave PORT="" / HOST="" as validation failures instead of
+  // falling back to the default.
+  port: z.preprocess(
+    emptyStringToUndefined,
+    z.coerce.number().int().positive().default(3000),
+  ),
+  host: z.preprocess(emptyStringToUndefined, z.string().default("127.0.0.1")),
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
 
   // MCP server identity, advertised as `serverInfo` on every transport.
@@ -59,10 +79,19 @@ export const configSchema = z.object({
 
   // AnkiConnect
   ankiConnect: z.object({
-    url: z.string().url().default("http://localhost:8765"),
+    url: z.preprocess(
+      emptyStringToUndefined,
+      z.string().url().default("http://localhost:8765"),
+    ),
     apiKey: z.string().optional(),
-    apiVersion: z.coerce.number().int().positive().default(6),
-    timeout: z.coerce.number().int().positive().default(5000),
+    apiVersion: z.preprocess(
+      emptyStringToUndefined,
+      z.coerce.number().int().positive().default(6),
+    ),
+    timeout: z.preprocess(
+      emptyStringToUndefined,
+      z.coerce.number().int().positive().default(5000),
+    ),
   }),
 
   // Auth (generic, not Keycloak-specific)
@@ -72,7 +101,10 @@ export const configSchema = z.object({
 
   // Tunnel
   tunnel: z.object({
-    serverUrl: z.string().url().default("wss://tunnel.ankimcp.ai"),
+    serverUrl: z.preprocess(
+      emptyStringToUndefined,
+      z.string().url().default("wss://tunnel.ankimcp.ai"),
+    ),
   }),
 
   // Read-only mode

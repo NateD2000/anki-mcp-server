@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { readFileSync } from "fs";
 import { join } from "path";
 import updateNotifier from "update-notifier";
@@ -6,15 +6,48 @@ import { formatBanner, type Cli } from "./cli-output";
 import { getVersion } from "../version";
 
 export interface CliOptions {
-  port: number;
-  host: string;
-  ankiConnect: string;
+  port: number | undefined;
+  host: string | undefined;
+  ankiConnect: string | undefined;
   ngrok: boolean;
   readOnly: boolean;
   login: string | boolean;
   logout: boolean;
   tunnel: string | boolean;
   debug: boolean;
+}
+
+/**
+ * Raw shape Commander hands back from `program.opts()`. All flag values are
+ * strings (or booleans for boolean flags) at this point — no parsing/coercion
+ * has happened yet, and any flag the user didn't pass is `undefined` (none of
+ * our options carry a Commander-level default; PORT/HOST/ANKI_CONNECT_URL
+ * defaults live in the Zod schema so env vars aren't clobbered).
+ */
+interface RawCliOptions {
+  stdio?: boolean;
+  port?: string;
+  host?: string;
+  ankiConnect?: string;
+  ngrok?: boolean;
+  readOnly?: boolean;
+  login?: string | boolean;
+  logout?: boolean;
+  tunnel?: string | boolean;
+  debug?: boolean;
+}
+
+/**
+ * Resolved fields the startup banner needs. Unlike {@link CliOptions}, these
+ * are the *post-validation* values (CLI flag, env var, or Zod schema default
+ * — whichever won), so a caller can't accidentally hand the banner an
+ * unresolved `undefined` port/host/ankiConnect straight from `CliOptions`.
+ */
+export interface BannerOptions {
+  port: number;
+  host: string;
+  ankiConnect: string;
+  readOnly: boolean;
 }
 
 function getPackageJson() {
@@ -29,6 +62,24 @@ function getPackageJson() {
 
 export function checkForUpdates(): void {
   updateNotifier({ pkg: getPackageJson() }).notify();
+}
+
+/**
+ * Parser for the `-a, --anki-connect <url>` option. Commander already
+ * requires a value for `<url>` (rejects a bare `-a`), but an explicit empty
+ * string (e.g. `-a ""` from a shell expansion of an unset env var) is a
+ * user-supplied override intent that would otherwise flow through
+ * `buildConfigInput` as `ANKI_CONNECT_URL=""` and silently resolve to the
+ * schema default. Throwing here surfaces a proper Commander usage error
+ * instead (mirrors the `--tunnel`/`--login` handling below).
+ */
+function parseAnkiConnectArg(value: string): string {
+  if (value.trim() === "") {
+    throw new InvalidArgumentError(
+      "AnkiConnect URL cannot be empty. Omit --anki-connect/-a to use the default (http://localhost:8765) or the ANKI_CONNECT_URL env var.",
+    );
+  }
+  return value;
 }
 
 /**
@@ -92,12 +143,18 @@ export function parseCliArgs(): CliOptions {
       "--stdio",
       "Run in STDIO mode (for MCP clients like Cursor, Cline, Zed)",
     )
-    .option("-p, --port <number>", "Port to listen on (HTTP mode)", "3000")
-    .option("-h, --host <address>", "Host to bind to (HTTP mode)", "127.0.0.1")
+    .option(
+      "-p, --port <number>",
+      "Port to listen on (HTTP mode; default: 3000, or PORT env var)",
+    )
+    .option(
+      "-h, --host <address>",
+      "Host to bind to (HTTP mode; default: 127.0.0.1, or HOST env var)",
+    )
     .option(
       "-a, --anki-connect <url>",
-      "AnkiConnect URL",
-      "http://localhost:8765",
+      "AnkiConnect URL (default: http://localhost:8765, or ANKI_CONNECT_URL env var)",
+      parseAnkiConnectArg,
     )
     .option(
       "--ngrok",
@@ -170,10 +227,14 @@ Tunnel Mode:
 
   program.parse();
 
-  const options = program.opts<CliOptions>();
+  const options = program.opts<RawCliOptions>();
 
   return {
-    port: parseInt(options.port.toString(), 10),
+    // No Commander default here: absence must stay `undefined` so
+    // buildConfigInput() lets PORT/HOST/ANKI_CONNECT_URL env vars apply. The
+    // Zod schema (config.schema.ts) owns the 3000 / 127.0.0.1 /
+    // http://localhost:8765 defaults.
+    port: options.port !== undefined ? parseInt(options.port, 10) : undefined,
     host: options.host,
     ankiConnect: options.ankiConnect,
     ngrok: options.ngrok || false,
@@ -187,7 +248,7 @@ Tunnel Mode:
 
 export function displayStartupBanner(
   cli: Cli,
-  options: CliOptions,
+  options: BannerOptions,
   ngrokUrl?: string,
 ): void {
   const readOnlyWarning = options.readOnly
