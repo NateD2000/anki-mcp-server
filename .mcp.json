@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "anki-mcp-http": {
+      "type": "http",
+      "url": "http://localhost:3000"
+    },
+    "anki-mcp-stdio": {
+      "type": "stdio",
+      "command": "ankimcp",
+      "args": [
+        "--stdio"
+      ],
+      "env": {}
+    }
+  }
+}
