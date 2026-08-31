@@ -283,9 +283,18 @@ export function calculateStreak(
     return 0;
   }
 
+  // Parse a date-only string (YYYY-MM-DD) as LOCAL midnight. `new Date("YYYY-MM-DD")`
+  // would parse it as UTC midnight, which is the *previous* local day in any
+  // timezone west of UTC and would break the day-by-day comparison below.
+  const parseLocalDate = (date: string): Date => {
+    const [year, month, day] = date.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   // Sort by date descending (most recent first)
   const sorted = [...reviewsByDay].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    (a, b) =>
+      parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime(),
   );
 
   let streak = 0;
@@ -293,8 +302,7 @@ export function calculateStreak(
   today.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < sorted.length; i++) {
-    const reviewDate = new Date(sorted[i].date);
-    reviewDate.setHours(0, 0, 0, 0);
+    const reviewDate = parseLocalDate(sorted[i].date);
 
     // Calculate expected date (today - i days)
     const expectedDate = new Date(today);

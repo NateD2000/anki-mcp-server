@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import { constants } from "fs";
+import * as path from "path";
 
 // Mock Logger BEFORE importing CredentialsService
 const mockLoggerWarn = jest.fn();
@@ -32,6 +33,7 @@ import { CredentialsService, TunnelCredentials } from "../credentials.service";
 describe("CredentialsService", () => {
   let service: CredentialsService;
   let mockHomedir: string;
+  let mockAnkimcpDir: string;
   let mockCredentialsPath: string;
 
   // Helper function to create valid test credentials
@@ -58,9 +60,12 @@ describe("CredentialsService", () => {
     mockLoggerError.mockClear();
     mockLoggerDebug.mockClear();
 
-    // Setup expected paths (homedir is mocked to "/home/testuser")
+    // Setup expected paths (homedir is mocked to "/home/testuser").
+    // Built with path.join so expectations match the platform separator
+    // the service's own path.join produces (backslashes on Windows).
     mockHomedir = "/home/testuser";
-    mockCredentialsPath = `${mockHomedir}/.ankimcp/credentials.json`;
+    mockAnkimcpDir = path.join(mockHomedir, ".ankimcp");
+    mockCredentialsPath = path.join(mockAnkimcpDir, "credentials.json");
 
     // Create service instance
     service = new CredentialsService();
@@ -72,19 +77,22 @@ describe("CredentialsService", () => {
 
   describe("getCredentialsPath", () => {
     it("should return correct path to credentials file", () => {
-      const path = service.getCredentialsPath();
+      const credentialsPath = service.getCredentialsPath();
 
-      expect(path).toBe(mockCredentialsPath);
-      expect(path).toContain(".ankimcp/credentials.json");
+      expect(credentialsPath).toBe(mockCredentialsPath);
+      expect(credentialsPath).toContain(
+        path.join(".ankimcp", "credentials.json"),
+      );
     });
 
     it("should return path based on mocked home directory", () => {
-      const path = service.getCredentialsPath();
+      const credentialsPath = service.getCredentialsPath();
 
       // Since homedir is mocked to "/home/testuser", verify it's used
-      expect(path).toBe("/home/testuser/.ankimcp/credentials.json");
-      expect(path).toContain(".ankimcp");
-      expect(path).toContain("credentials.json");
+      expect(credentialsPath).toBe(mockCredentialsPath);
+      expect(credentialsPath).toContain("testuser");
+      expect(credentialsPath).toContain(".ankimcp");
+      expect(credentialsPath).toContain("credentials.json");
     });
 
     it("should return consistent path across multiple calls", () => {
@@ -110,11 +118,8 @@ describe("CredentialsService", () => {
 
       await service.saveCredentials(credentials);
 
-      expect(fs.access).toHaveBeenCalledWith(
-        `${mockHomedir}/.ankimcp`,
-        constants.F_OK,
-      );
-      expect(fs.mkdir).toHaveBeenCalledWith(`${mockHomedir}/.ankimcp`, {
+      expect(fs.access).toHaveBeenCalledWith(mockAnkimcpDir, constants.F_OK);
+      expect(fs.mkdir).toHaveBeenCalledWith(mockAnkimcpDir, {
         recursive: true,
         mode: 0o700,
       });
@@ -130,10 +135,7 @@ describe("CredentialsService", () => {
 
       await service.saveCredentials(credentials);
 
-      expect(fs.access).toHaveBeenCalledWith(
-        `${mockHomedir}/.ankimcp`,
-        constants.F_OK,
-      );
+      expect(fs.access).toHaveBeenCalledWith(mockAnkimcpDir, constants.F_OK);
       expect(fs.mkdir).not.toHaveBeenCalled();
     });
 
@@ -730,7 +732,7 @@ describe("CredentialsService", () => {
 
       const callArg = (fs.unlink as jest.Mock).mock.calls[0][0];
       expect(callArg).toBe(mockCredentialsPath);
-      expect(callArg).toContain(".ankimcp/credentials.json");
+      expect(callArg).toContain(path.join(".ankimcp", "credentials.json"));
     });
   });
 

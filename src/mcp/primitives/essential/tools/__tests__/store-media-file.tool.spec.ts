@@ -3,6 +3,7 @@ import { StoreMediaFileTool } from "../store-media-file.tool";
 import { AnkiConnectClient } from "@/mcp/clients/anki-connect.client";
 import { parseToolResult } from "@/test-fixtures/test-helpers";
 import * as dns from "node:dns";
+import * as path from "node:path";
 
 jest.mock("@/mcp/clients/anki-connect.client");
 
@@ -80,7 +81,9 @@ describe("StoreMediaFileTool", () => {
 
     expect(ankiClient.invoke).toHaveBeenCalledWith("storeMediaFile", {
       filename: "image.jpg",
-      path: "/absolute/path/to/image.jpg",
+      // The tool sends the resolved path, which is platform-specific
+      // (e.g. C:\absolute\... on Windows)
+      path: path.resolve("/absolute/path/to/image.jpg"),
       deleteExisting: true,
     });
     expect(result.success).toBe(true);
@@ -199,7 +202,7 @@ describe("StoreMediaFileTool", () => {
         expect(result.success).toBe(true);
         expect(ankiClient.invoke).toHaveBeenCalledWith(
           "storeMediaFile",
-          expect.objectContaining({ path: "/photos/cat.jpg" }),
+          expect.objectContaining({ path: path.resolve("/photos/cat.jpg") }),
         );
       });
 
