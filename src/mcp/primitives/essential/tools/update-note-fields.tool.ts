@@ -24,7 +24,8 @@ export class UpdateNoteFieldsTool {
     description:
       "Update the fields of an existing note. Supports HTML content in fields and preserves CSS styling. " +
       "WARNING: Do not view the note in Anki browser while updating, or the fields will not update properly. " +
-      "Close the browser or switch to a different note before updating. IMPORTANT: Only update notes that the user explicitly asked to modify.",
+      "Close the browser or switch to a different note before updating. IMPORTANT: Only update notes that the user explicitly asked to modify. " +
+      "By default this runs as a dry run (dryRun: true) that only previews old vs new field values; set dryRun: false to actually apply the update.",
     parameters: z.object({
       note: z.object({
         id: z
@@ -59,16 +60,33 @@ export class UpdateNoteFieldsTool {
           .optional()
           .describe("Optional images to add to the note"),
       }),
+      dryRun: z
+        .boolean()
+        .default(true)
+        .describe(
+          "When true (the default), the note is NOT modified - the tool validates the update and returns a preview " +
+            "of old vs new field values. Set to false to actually apply the update.",
+        ),
     }),
     outputSchema: z.object({
       success: z.boolean(),
+      dryRun: z.boolean().optional(),
       noteId: z.number(),
-      updatedFields: z.array(z.string()),
+      updatedFields: z.array(z.string()).optional(),
+      fieldChanges: z
+        .array(
+          z.object({
+            field: z.string(),
+            oldValue: z.string(),
+            newValue: z.string(),
+          }),
+        )
+        .optional(),
       fieldCount: z.number(),
       modelName: z.string(),
       message: z.string(),
-      cssNote: z.string(),
-      warning: z.string(),
+      cssNote: z.string().optional(),
+      warning: z.string().optional(),
       hint: z.string(),
     }),
     annotations: {
@@ -82,7 +100,9 @@ export class UpdateNoteFieldsTool {
     @Payload()
     {
       note,
+      dryRun = true,
     }: {
+      dryRun?: boolean;
       note: {
         id: number;
         fields: Record<string, string>;
@@ -175,6 +195,32 @@ export class UpdateNoteFieldsTool {
             hint: `These fields don't exist in the "${modelName}" model. Use modelFieldNames to see valid fields.`,
           },
         );
+      }
+
+      // Dry run: return a preview of old vs new values, no mutating call
+      if (dryRun) {
+        const fieldChanges = Object.entries(note.fields).map(
+          ([field, newValue]) => ({
+            field,
+            oldValue: currentNote.fields[field]?.value ?? "",
+            newValue,
+          }),
+        );
+
+        this.logger.log(
+          `Dry run: would update ${fieldCount} field(s) for note ID: ${note.id}`,
+        );
+
+        return {
+          success: true,
+          dryRun: true,
+          noteId: note.id,
+          fieldChanges,
+          fieldCount,
+          modelName,
+          message: `Dry run: ${fieldCount} field${fieldCount === 1 ? "" : "s"} WOULD be updated. Nothing was changed.`,
+          hint: "Re-call with dryRun: false to actually apply these field updates",
+        };
       }
 
       // Build the update parameters

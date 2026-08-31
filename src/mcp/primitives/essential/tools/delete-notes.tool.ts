@@ -18,7 +18,8 @@ export class DeleteNotesTool {
     name: "deleteNotes",
     description:
       "Delete notes by their IDs. This will permanently remove the notes and ALL associated cards. " +
-      "This action cannot be undone unless you have a backup. CRITICAL: This is destructive and permanent - only delete notes the user explicitly confirmed for deletion.",
+      "This action cannot be undone unless you have a backup. CRITICAL: This is destructive and permanent - only delete notes the user explicitly confirmed for deletion. " +
+      "By default this runs as a dry run (dryRun: true) that only previews what would be deleted; set dryRun: false to actually delete.",
     parameters: z.object({
       notes: z
         .array(z.number())
@@ -33,10 +34,21 @@ export class DeleteNotesTool {
         .describe(
           "Must be set to true to confirm you want to permanently delete these notes and their cards",
         ),
+      dryRun: z
+        .boolean()
+        .default(true)
+        .describe(
+          "When true (the default), no notes are deleted - the tool returns a preview of what WOULD be deleted. " +
+            "Set to false to actually perform the deletion.",
+        ),
     }),
     outputSchema: z.object({
       success: z.boolean(),
-      deletedCount: z.number(),
+      dryRun: z.boolean().optional(),
+      wouldDeleteCount: z.number().optional(),
+      wouldDeleteNoteIds: z.array(z.number()).optional(),
+      cardsAffected: z.number().optional(),
+      deletedCount: z.number().optional(),
       deletedNoteIds: z.array(z.number()).optional(),
       cardsDeleted: z.number().optional(),
       notFoundCount: z.number(),
@@ -54,11 +66,20 @@ export class DeleteNotesTool {
   })
   async deleteNotes(
     @Payload()
-    { notes, confirmDeletion }: { notes: number[]; confirmDeletion: boolean },
+    {
+      notes,
+      confirmDeletion,
+      dryRun = true,
+    }: {
+      notes: number[];
+      confirmDeletion: boolean;
+      dryRun?: boolean;
+    },
   ) {
     try {
-      // Safety check - require explicit confirmation
-      if (!confirmDeletion) {
+      // Safety check - require explicit confirmation (dry runs are read-only
+      // previews, so they don't need confirmation)
+      if (!dryRun && !confirmDeletion) {
         return createErrorResponse(new Error("Deletion not confirmed"), {
           requestedNotes: notes,
           noteCount: notes.length,
@@ -67,7 +88,9 @@ export class DeleteNotesTool {
         });
       }
 
-      this.logger.log(`Deleting ${notes.length} note(s)`);
+      this.logger.log(
+        `${dryRun ? "Dry run: previewing deletion of" : "Deleting"} ${notes.length} note(s)`,
+      );
 
       // First, get info about the notes to be deleted (for logging and confirmation)
       const notesInfo = await this.ankiClient.invoke<any[]>("notesInfo", {
@@ -97,6 +120,25 @@ export class DeleteNotesTool {
         (sum, note) => sum + (note.cards?.length || 0),
         0,
       );
+
+      // Dry run: return a preview without making any mutating call
+      if (dryRun) {
+        this.logger.log(
+          `Dry run: would delete ${validNoteIds.length} note(s) and ${totalCards} card(s)`,
+        );
+
+        return {
+          success: true,
+          dryRun: true,
+          wouldDeleteCount: validNoteIds.length,
+          wouldDeleteNoteIds: validNoteIds,
+          cardsAffected: totalCards,
+          notFoundCount,
+          requestedIds: notes,
+          message: `Dry run: ${validNoteIds.length} note(s) and ${totalCards} card(s) WOULD be deleted. Nothing was deleted.`,
+          hint: "Re-call with dryRun: false and confirmDeletion: true to actually delete these notes",
+        };
+      }
 
       // Call AnkiConnect deleteNotes action
       await this.ankiClient.invoke<null>("deleteNotes", {

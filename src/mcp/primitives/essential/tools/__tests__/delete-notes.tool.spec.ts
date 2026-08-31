@@ -35,6 +35,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: false,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -62,6 +63,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -105,6 +107,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -132,6 +135,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -160,6 +164,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -177,6 +182,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -199,6 +205,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -219,6 +226,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: tooManyNotes,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -238,6 +246,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: [mockNotes.spanish.noteId],
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -255,6 +264,7 @@ describe("DeleteNotesTool", () => {
       const _rawResult = await tool.deleteNotes({
         notes: [mockNotes.spanish.noteId],
         confirmDeletion: true,
+        dryRun: false,
       });
 
       // Assert
@@ -275,6 +285,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: [mockNotes.spanish.noteId],
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -294,6 +305,7 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: noteIds,
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
@@ -312,12 +324,90 @@ describe("DeleteNotesTool", () => {
       const rawResult = await tool.deleteNotes({
         notes: [mockNotes.spanish.noteId],
         confirmDeletion: true,
+        dryRun: false,
       });
       const result = parseToolResult(rawResult);
 
       // Assert
       expect(result.warning).toBeDefined();
       expect(result.warning).toContain("permanently deleted");
+    });
+  });
+
+  describe("deleteNotes dry run", () => {
+    it("should default to dry run and make no deleting call", async () => {
+      // Arrange
+      const noteIds = [mockNotes.spanish.noteId, mockNotes.japanese.noteId];
+      const notesInfo = [
+        { ...mockNotes.spanish, cards: [1, 2] },
+        { ...mockNotes.japanese, cards: [3, 4, 5] },
+      ];
+      ankiClient.invoke.mockResolvedValueOnce(notesInfo);
+
+      // Act - dryRun omitted, defaults to true
+      const rawResult = await tool.deleteNotes({
+        notes: noteIds,
+        confirmDeletion: true,
+      });
+      const result = parseToolResult(rawResult);
+
+      // Assert - only the notesInfo lookup ran, never deleteNotes
+      expect(ankiClient.invoke).toHaveBeenCalledTimes(1);
+      expect(ankiClient.invoke).toHaveBeenCalledWith("notesInfo", {
+        notes: noteIds,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.dryRun).toBe(true);
+      expect(result.wouldDeleteCount).toBe(2);
+      expect(result.wouldDeleteNoteIds).toEqual(noteIds);
+      expect(result.cardsAffected).toBe(5);
+      expect(result.message).toContain("WOULD be deleted");
+      expect(result.hint).toContain("dryRun: false");
+    });
+
+    it("should not require confirmation for a dry run", async () => {
+      // Arrange
+      ankiClient.invoke.mockResolvedValueOnce([
+        { ...mockNotes.spanish, cards: [1] },
+      ]);
+
+      // Act
+      const rawResult = await tool.deleteNotes({
+        notes: [mockNotes.spanish.noteId],
+        confirmDeletion: false,
+        dryRun: true,
+      });
+      const result = parseToolResult(rawResult);
+
+      // Assert - preview returned instead of a confirmation error
+      expect(result.success).toBe(true);
+      expect(result.dryRun).toBe(true);
+      expect(result.wouldDeleteCount).toBe(1);
+      expect(ankiClient.invoke).toHaveBeenCalledTimes(1);
+    });
+
+    it("should report not-found notes in the dry-run preview", async () => {
+      // Arrange
+      const noteIds = [mockNotes.spanish.noteId, 9999999999];
+      ankiClient.invoke.mockResolvedValueOnce([
+        { ...mockNotes.spanish, cards: [1] },
+        null,
+      ]);
+
+      // Act
+      const rawResult = await tool.deleteNotes({
+        notes: noteIds,
+        confirmDeletion: true,
+        dryRun: true,
+      });
+      const result = parseToolResult(rawResult);
+
+      // Assert
+      expect(result.dryRun).toBe(true);
+      expect(result.wouldDeleteCount).toBe(1);
+      expect(result.notFoundCount).toBe(1);
+      expect(result.requestedIds).toEqual(noteIds);
     });
   });
 });

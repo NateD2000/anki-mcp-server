@@ -35,7 +35,7 @@ Three representative prompts showing the tool flows this server enables:
 
 ## Available Tools
 
-The server exposes **42 MCP tools** — 31 essential tools for everyday Anki operations and 11 GUI tools that drive the Anki desktop interface for note editing/creation workflows.
+The server exposes **49 MCP tools** — 38 essential tools for everyday Anki operations and 11 GUI tools that drive the Anki desktop interface for note editing/creation workflows.
 
 ### Essential Tools
 
@@ -56,13 +56,26 @@ The server exposes **42 MCP tools** — 31 essential tools for everyday Anki ope
 
 > **Note:** Deck statistics come in two flavours. The `counts` block (and everything `listDecks` reports) mirrors Anki's deck browser: cards **due today**, capped by each deck's **daily new/review limits**, with suspended and buried cards excluded — so `review` is not "mature cards" and the `other` bucket is just the arithmetic remainder (mostly review cards not due today plus new cards over the daily limit). For true per-state totals use the `states` block on `deckStats` / `collection_stats`, which counts `new`, `learning`, `review`, `suspended` and `buried` via Anki searches, ignoring due dates and daily limits.
 
+#### Scheduling
+- `suspendCards` - Suspend cards so they are excluded from review (reversible)
+- `unsuspendCards` - Return suspended cards to the review queue
+- `forgetCards` - Reset cards to the new state, erasing scheduling history (requires confirmation)
+- `setDueDate` - Reschedule cards to be due on a given day (`"0"`, `"1"`, or a range like `"3-7"`)
+- `getCardReviews` - Get per-card review history (ease, intervals, ease factor, time taken)
+- `findLeeches` - Find repeatedly-forgotten cards (leech tag or high lapse count), sorted by lapses
+
+#### Safety
+- `backupCollection` - Export decks to timestamped `.apkg` backups in `~/.ankimcp/backups/` (whole collection = every top-level deck)
+
+> **Note:** `deleteNotes` and `updateNoteFields` default to `dryRun: true` — they return a preview of what would change without touching the collection. Pass `dryRun: false` to apply.
+
 #### Note Management
 - `addNote` - Create a single note with specified fields and tags
 - `addNotes` - Batch-create up to 100 notes sharing a deck and model (partial success supported)
 - `findNotes` - Search for notes using Anki query syntax (`deck:`, `tag:`, `is:due`, etc.)
 - `notesInfo` - Get detailed information about notes (fields, tags, CSS styling)
-- `updateNoteFields` - Update existing note fields (CSS-aware, supports HTML content)
-- `deleteNotes` - Delete notes and all associated cards (destructive, requires confirmation)
+- `updateNoteFields` - Update existing note fields (CSS-aware, supports HTML content; dry-run by default)
+- `deleteNotes` - Delete notes and all associated cards (destructive, requires confirmation; dry-run by default)
 
 #### Tag Management
 - `getTags` - Get all tags in the collection (use first to avoid duplication)

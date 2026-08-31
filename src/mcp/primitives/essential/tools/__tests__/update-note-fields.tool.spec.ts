@@ -66,6 +66,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: updatedFields,
@@ -106,6 +107,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: htmlFields,
@@ -130,6 +132,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: {},
@@ -151,6 +154,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: { Front: "Test" },
@@ -178,6 +182,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: invalidFields,
@@ -208,6 +213,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: partialUpdate,
@@ -249,7 +255,10 @@ describe("UpdateNoteFieldsTool", () => {
         .mockResolvedValueOnce(null);
 
       // Act
-      const rawResult = await tool.updateNoteFields({ note: noteWithMedia });
+      const rawResult = await tool.updateNoteFields({
+        dryRun: false,
+        note: noteWithMedia,
+      });
       const result = parseToolResult(rawResult);
 
       // Assert
@@ -268,6 +277,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: { Front: "Updated" },
@@ -288,6 +298,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: 123,
           fields: { Front: "Test" },
@@ -312,6 +323,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: { Front: "Test" },
@@ -334,6 +346,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: mockNotes.spanish.noteId,
           fields: { Front: "Test" },
@@ -351,6 +364,7 @@ describe("UpdateNoteFieldsTool", () => {
 
       // Act
       const rawResult = await tool.updateNoteFields({
+        dryRun: false,
         note: {
           id: mockNotes.japanese.noteId,
           fields: { Front: "Updated" },
@@ -371,6 +385,7 @@ describe("UpdateNoteFieldsTool", () => {
     describe("audio URL validation", () => {
       it("should reject file:// URLs in audio[].url", async () => {
         const rawResult = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: mockNotes.spanish.noteId,
             fields: { Front: "Test" },
@@ -397,6 +412,7 @@ describe("UpdateNoteFieldsTool", () => {
         ]);
 
         const rawResult = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: mockNotes.spanish.noteId,
             fields: { Front: "Test" },
@@ -428,6 +444,7 @@ describe("UpdateNoteFieldsTool", () => {
           .mockResolvedValueOnce(null); // updateNoteFields
 
         const rawResult = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: mockNotes.spanish.noteId,
             fields: { Front: "Test" },
@@ -453,6 +470,7 @@ describe("UpdateNoteFieldsTool", () => {
           .mockResolvedValueOnce([{ address: "192.168.1.1", family: 4 }]);
 
         const result = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: 1234567890,
             fields: { Front: "test" },
@@ -482,6 +500,7 @@ describe("UpdateNoteFieldsTool", () => {
     describe("picture URL validation", () => {
       it("should reject file:// URLs in picture[].url", async () => {
         const rawResult = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: mockNotes.spanish.noteId,
             fields: { Front: "Test" },
@@ -505,6 +524,7 @@ describe("UpdateNoteFieldsTool", () => {
         mockLookup.mockResolvedValueOnce([{ address: "10.0.0.1", family: 4 }]);
 
         const rawResult = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: mockNotes.spanish.noteId,
             fields: { Front: "Test" },
@@ -536,6 +556,7 @@ describe("UpdateNoteFieldsTool", () => {
           .mockResolvedValueOnce(null); // updateNoteFields
 
         const rawResult = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: mockNotes.spanish.noteId,
             fields: { Front: "Test" },
@@ -563,6 +584,7 @@ describe("UpdateNoteFieldsTool", () => {
           .mockResolvedValueOnce([{ address: "10.0.0.1", family: 4 }]);
 
         const result = await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: 1234567890,
             fields: { Front: "test" },
@@ -614,6 +636,7 @@ describe("UpdateNoteFieldsTool", () => {
         });
 
         await tool.updateNoteFields({
+          dryRun: false,
           note: {
             id: 1234567890,
             fields: { Front: "test" },
@@ -639,6 +662,86 @@ describe("UpdateNoteFieldsTool", () => {
           }),
         );
       });
+    });
+  });
+
+  describe("dry run", () => {
+    it("should default to dry run and make no updating call", async () => {
+      // Arrange
+      const noteId = mockNotes.spanish.noteId;
+      ankiClient.invoke.mockResolvedValueOnce([mockNotes.spanish]); // notesInfo
+
+      // Act - dryRun omitted, defaults to true
+      const rawResult = await tool.updateNoteFields({
+        note: {
+          id: noteId,
+          fields: { Front: "Que tal?" },
+        },
+      });
+      const result = parseToolResult(rawResult);
+
+      // Assert - only the notesInfo lookup ran, never updateNoteFields
+      expect(ankiClient.invoke).toHaveBeenCalledTimes(1);
+      expect(ankiClient.invoke).toHaveBeenCalledWith("notesInfo", {
+        notes: [noteId],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.dryRun).toBe(true);
+      expect(result.noteId).toBe(noteId);
+      expect(result.modelName).toBe("Basic");
+      expect(result.fieldChanges).toEqual([
+        {
+          field: "Front",
+          oldValue: "¿Cómo estás?",
+          newValue: "Que tal?",
+        },
+      ]);
+      expect(result.message).toContain("WOULD be updated");
+      expect(result.hint).toContain("dryRun: false");
+    });
+
+    it("should preview old vs new values for multiple fields", async () => {
+      // Arrange
+      ankiClient.invoke.mockResolvedValueOnce([mockNotes.spanish]);
+
+      // Act
+      const rawResult = await tool.updateNoteFields({
+        dryRun: true,
+        note: {
+          id: mockNotes.spanish.noteId,
+          fields: { Front: "New front", Back: "New back" },
+        },
+      });
+      const result = parseToolResult(rawResult);
+
+      // Assert
+      expect(result.dryRun).toBe(true);
+      expect(result.fieldCount).toBe(2);
+      expect(result.fieldChanges).toEqual([
+        { field: "Front", oldValue: "¿Cómo estás?", newValue: "New front" },
+        { field: "Back", oldValue: "How are you?", newValue: "New back" },
+      ]);
+    });
+
+    it("should still validate fields against the model in dry run", async () => {
+      // Arrange
+      ankiClient.invoke.mockResolvedValueOnce([mockNotes.spanish]);
+
+      // Act
+      const rawResult = await tool.updateNoteFields({
+        dryRun: true,
+        note: {
+          id: mockNotes.spanish.noteId,
+          fields: { InvalidField: "value" },
+        },
+      });
+      const result = parseToolResult(rawResult);
+
+      // Assert - validation error, no mutation attempted
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Invalid fields for model");
+      expect(ankiClient.invoke).toHaveBeenCalledTimes(1);
     });
   });
 });

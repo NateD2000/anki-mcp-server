@@ -1242,6 +1242,11 @@ describe("AnkiConnectClient", () => {
         { action: "addNote", params: { note: {} } },
         { action: "updateNoteFields", params: { note: { id: 1 } } },
         { action: "deleteNotes", params: { notes: [] } },
+        // Scheduling operations
+        { action: "suspend", params: { cards: [] } },
+        { action: "unsuspend", params: { cards: [] } },
+        { action: "forgetCards", params: { cards: [] } },
+        { action: "setDueDate", params: { cards: [], days: "0" } },
         // Deck operations
         { action: "createDeck", params: { deck: "Test" } },
         { action: "changeDeck", params: { cards: [], deck: "Test" } },
@@ -1303,13 +1308,13 @@ describe("AnkiConnectClient", () => {
         { action: "guiCurrentCard", result: null },
         { action: "guiShowQuestion", result: true },
         { action: "guiShowAnswer", result: true },
-        // Review/scheduling operations are allowed (read-only protects content, not review state)
+        // Review operations are allowed (read-only protects content, not review state)
         { action: "sync", result: null },
-        { action: "suspend", result: true },
-        { action: "unsuspend", result: true },
         { action: "answerCards", result: [true] },
-        { action: "forgetCards", result: null },
         { action: "relearnCards", result: null },
+        // Backups must keep working in read-only mode
+        { action: "exportPackage", result: true },
+        { action: "getReviewsOfCards", result: {} },
         { action: "guiAnswerCard", result: true },
         { action: "guiSelectNote", result: true },
         { action: "guiAddCards", result: 123 },

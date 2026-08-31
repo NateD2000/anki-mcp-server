@@ -54,6 +54,14 @@ export { AddTagsTool } from "./tools/add-tags.tool";
 export { RemoveTagsTool } from "./tools/remove-tags.tool";
 export { ReplaceTagsTool } from "./tools/replace-tags.tool";
 export { ClearUnusedTagsTool } from "./tools/clear-unused-tags.tool";
+// Scheduling tools
+export { SuspendCardsTool } from "./tools/suspend-cards.tool";
+export { ForgetCardsTool } from "./tools/forget-cards.tool";
+export { SetDueDateTool } from "./tools/set-due-date.tool";
+export { CardReviewsTool } from "./tools/card-reviews.tool";
+export { FindLeechesTool } from "./tools/find-leeches.tool";
+// Safety tools
+export { BackupCollectionTool } from "./tools/backup-collection.tool";
 export { CollectionStatsTool } from "./tools/collection-stats";
 export { ReviewStatsTool } from "./tools/review-stats";
 
@@ -102,6 +110,12 @@ import { AddTagsTool } from "./tools/add-tags.tool";
 import { RemoveTagsTool } from "./tools/remove-tags.tool";
 import { ReplaceTagsTool } from "./tools/replace-tags.tool";
 import { ClearUnusedTagsTool } from "./tools/clear-unused-tags.tool";
+import { SuspendCardsTool } from "./tools/suspend-cards.tool";
+import { ForgetCardsTool } from "./tools/forget-cards.tool";
+import { SetDueDateTool } from "./tools/set-due-date.tool";
+import { CardReviewsTool } from "./tools/card-reviews.tool";
+import { FindLeechesTool } from "./tools/find-leeches.tool";
+import { BackupCollectionTool } from "./tools/backup-collection.tool";
 import { CollectionStatsTool } from "./tools/collection-stats";
 import { ReviewStatsTool } from "./tools/review-stats";
 import { ReviewSessionPrompt } from "./prompts/review-session.prompt";
@@ -149,6 +163,14 @@ export const ESSENTIAL_MCP_TOOLS = [
   RemoveTagsTool,
   ReplaceTagsTool,
   ClearUnusedTagsTool,
+  // Scheduling tools
+  SuspendCardsTool,
+  ForgetCardsTool,
+  SetDueDateTool,
+  CardReviewsTool,
+  FindLeechesTool,
+  // Safety tools
+  BackupCollectionTool,
   CollectionStatsTool,
   ReviewStatsTool,
   // Prompts

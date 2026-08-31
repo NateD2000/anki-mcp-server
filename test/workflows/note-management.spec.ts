@@ -143,6 +143,7 @@ describe("Note Management Workflow", () => {
       );
 
       const updateRawResult = await updateNoteFieldsTool.updateNoteFields({
+        dryRun: false,
         note: {
           id: newNoteId,
           fields: updatedFields,
@@ -193,6 +194,7 @@ describe("Note Management Workflow", () => {
       );
 
       const deleteRawResult = await deleteNotesTool.deleteNotes({
+        dryRun: false,
         notes: [newNoteId],
         confirmDeletion: true,
       });
@@ -277,6 +279,7 @@ describe("Note Management Workflow", () => {
         );
 
         const updateRawResult = await updateNoteFieldsTool.updateNoteFields({
+          dryRun: false,
           note: {
             id: noteIds[i],
             fields: { Back: `Updated Answer ${noteIds[i]}` },
@@ -300,6 +303,7 @@ describe("Note Management Workflow", () => {
       );
 
       const deleteRawResult = await deleteNotesTool.deleteNotes({
+        dryRun: false,
         notes: noteIds,
         confirmDeletion: true,
       });
@@ -322,6 +326,7 @@ describe("Note Management Workflow", () => {
       );
 
       const updateRawResult = await updateNoteFieldsTool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: { Front: "Test" },
@@ -381,6 +386,7 @@ describe("Note Management Workflow", () => {
       );
 
       const retryUpdateRawResult = await updateNoteFieldsTool.updateNoteFields({
+        dryRun: false,
         note: {
           id: noteId,
           fields: { Front: "Updated Recovery Question" },

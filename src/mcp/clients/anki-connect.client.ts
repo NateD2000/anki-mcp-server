@@ -44,13 +44,19 @@ export function __resetAnkiQueueForTests(): void {
  * Used to block write operations in read-only mode.
  *
  * Only includes actions actually exposed by our tools.
- * Review/scheduling operations (answerCards, suspend, sync, etc.) are allowed.
+ * Review operations (answerCards, sync, etc.) are allowed, as is
+ * exportPackage so backups still work in read-only mode.
  */
 const WRITE_ACTIONS = new Set([
   // Note operations
   "addNote",
   "updateNoteFields",
   "deleteNotes",
+  // Scheduling operations
+  "suspend",
+  "unsuspend",
+  "forgetCards",
+  "setDueDate",
   // Deck operations
   "createDeck",
   "changeDeck",
