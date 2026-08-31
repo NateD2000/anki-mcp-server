@@ -62,6 +62,7 @@ describe("BackupCollectionTool", () => {
           includeSched: true,
           path: expect.stringMatching(/Spanish-\d{8}-\d{6}\.apkg$/),
         }),
+        { timeoutMs: 600_000 },
       );
 
       expect(result.success).toBe(true);

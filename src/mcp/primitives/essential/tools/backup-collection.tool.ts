@@ -63,7 +63,10 @@ export class BackupCollectionTool {
       "Back up decks to .apkg files (including scheduling data) in ~/.ankimcp/backups/ " +
       "on the machine running Anki. Pass a deck name to back up one deck (and its " +
       "subdecks), or omit it to back up every top-level deck to a separate file. " +
-      "Strongly recommended before destructive operations like deleteNotes or forgetCards.",
+      "Strongly recommended before destructive operations like deleteNotes or forgetCards. " +
+      "Media-heavy decks can take several minutes to export, and Anki does not answer other " +
+      "AnkiConnect requests until the export finishes — run this once and wait; never re-issue " +
+      "the call while one is in flight (each retry queues another full export inside Anki).",
     parameters: z.object({
       deck: z
         .string()
@@ -136,6 +139,9 @@ export class BackupCollectionTool {
             path: filePath,
             includeSched: true,
           },
+          // exportPackage rewrites the whole deck (plus media) to disk and
+          // can far outlive the default AnkiConnect timeout on large decks.
+          { timeoutMs: 600_000 },
         );
 
         backups.push({

@@ -166,6 +166,7 @@ export class AnkiConnectClient {
   async invoke<T = any>(
     action: string,
     params?: Record<string, any>,
+    options?: { timeoutMs?: number },
   ): Promise<T> {
     // Check for read-only mode violation
     if (this.readOnly && WRITE_ACTIONS.has(action)) {
@@ -211,6 +212,10 @@ export class AnkiConnectClient {
         const response = await this.client
           .post("", {
             json: request,
+            // Per-call override for slow actions (e.g. exportPackage on a
+            // media-heavy deck outlives the default timeout). The mutex is
+            // held for the duration either way.
+            ...(options?.timeoutMs ? { timeout: options.timeoutMs } : {}),
           })
           .json<AnkiConnectResponse<T>>();
 
